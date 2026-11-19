@@ -10,40 +10,55 @@
 
 import hashlib
 import os
-import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
 W, H = 1024, 1024
+OUT = "/output/entry.png"
 
 PAPER = (247, 243, 234)      # warm newsprint
-INK = (17, 24, 39)
-NAVY = (30, 58, 95)
-NAVY_DARK = (23, 45, 76)
-RED = (185, 28, 28)
-GOLD = (180, 83, 9)
-GREY = (100, 106, 118)
-CARD = (255, 255, 255)
-LINE = (203, 204, 198)
-SKY = (214, 228, 240)
-SEA = (96, 138, 170)
+INK = (22, 26, 36)
+NAVY = (27, 51, 92)
+NAVY_DARK = (18, 36, 68)
+RED = (178, 34, 34)
+GOLD = (176, 92, 14)
+GREY = (104, 109, 122)
+SOFT = (58, 64, 78)
+LINE = (196, 193, 184)
+SKY = (205, 224, 238)
+SUN = (232, 164, 48)
 
 FONT_DIR = "/usr/share/fonts/truetype/dejavu"
-F_BOLD = os.path.join(FONT_DIR, "DejaVuSans-Bold.ttf")
-F_REG = os.path.join(FONT_DIR, "DejaVuSans.ttf")
 
 
-def font(path, size):
+def _load(name, size):
     try:
-        return ImageFont.truetype(path, size)
-    except OSError:
+        return ImageFont.truetype(os.path.join(FONT_DIR, name), size)
+    except Exception:
         return ImageFont.load_default()
 
 
+def serif_b(size):
+    return _load("DejaVuSerif-Bold.ttf", size)
+
+
+def serif(size):
+    return _load("DejaVuSerif.ttf", size)
+
+
+def sans(size):
+    return _load("DejaVuSans.ttf", size)
+
+
+def sans_b(size):
+    return _load("DejaVuSans-Bold.ttf", size)
+
+
 def wrap(draw, text, fnt, max_w):
-    """Greedy word wrap returning a list of lines that fit max_w."""
-    lines, cur = [], ""
-    for word in text.split():
+    words = text.split()
+    lines = []
+    cur = ""
+    for word in words:
         trial = (cur + " " + word).strip()
         if draw.textlength(trial, font=fnt) <= max_w:
             cur = trial
@@ -56,181 +71,178 @@ def wrap(draw, text, fnt, max_w):
     return lines
 
 
-def draw_summit(draw, x0, y0, x1, y1):
-    """Stylised Shenzhen skyline with three flags: US, China, Russia."""
-    draw.rectangle([x0, y0, x1, y1], fill=SKY)
-    # sun
-    draw.ellipse([x1 - 52, y0 + 10, x1 - 18, y0 + 44], fill=(240, 196, 90))
-    # skyline silhouettes
-    towers = [(x0 + 10, 150, 46, 96), (x0 + 62, 120, 40, 126),
-              (x0 + 108, 160, 52, 86), (x0 + 166, 104, 38, 142),
-              (x0 + 210, 140, 44, 106), (x0 + 258, 118, 30, 128)]
-    for tx, ty, tw, th in towers:
-        draw.rectangle([tx, y0 + ty, tx + tw, y1 - 24], fill=(70, 90, 120))
-    # windows
-    for tx, ty, tw, th in towers:
-        for wy in range(y0 + ty + 12, y1 - 36, 18):
-            for wx in range(tx + 6, tx + tw - 6, 14):
-                draw.rectangle([wx, wy, wx + 5, wy + 7], fill=(240, 196, 90))
-    # ground strip
-    draw.rectangle([x0, y1 - 24, x1, y1], fill=(23, 45, 76))
-    # three flags on poles above the skyline
-    poles = [(x0 + 40, "US"), (x0 + 148, "CN"), (x0 + 256, "RU")]
-    flag_cols = {"US": [(178, 34, 52), (255, 255, 255), (60, 59, 110)],
-                 "CN": [(222, 41, 16), (255, 222, 0), (222, 41, 16)],
-                 "RU": [(255, 255, 255), (0, 57, 166), (213, 0, 50)]}
-    for px, code in poles:
-        draw.rectangle([px, y0 + 46, px + 3, y0 + 96], fill=INK)
-        cols = flag_cols[code]
-        for i, c in enumerate(cols):
-            draw.rectangle([px + 3, y0 + 46 + i * 10, px + 33, y0 + 56 + i * 10],
-                           fill=c)
-    # caption
-    cap = font(F_REG, 13)
-    draw.text((x0 + 6, y1 - 20), "Shenzhen hosts the trilateral summit",
-              font=cap, fill=(255, 255, 255))
+def para(draw, x, y, text, fnt, fill, max_w, leading):
+    for line in wrap(draw, text, fnt, max_w):
+        draw.text((x, y), line, font=fnt, fill=fill)
+        y += leading
+    return y
 
 
-STORIES = [
-    ("GULF ON FIRE", "US and Iran trade fire as Tehran widens attacks",
-     "US forces struck a missile site on Iran's Qeshm Island after Iran hit "
-     "a US radar base in Bahrain. On 18 Nov Iran widened its attacks to a "
-     "US base in Kuwait and struck Bahrain again."),
-    ("EUROPE", "EU proposes \u20ac45bn Ukraine loan, Russia to pay",
-     "The European Commission proposes a \u20ac45 billion loan to keep "
-     "Ukraine's budget afloat, to be repaid after Russia pays reparations. "
-     "EU leaders take up the plan on Wednesday."),
-    ("CULTURE", "GTA VI begins global rollout after 13-year wait",
-     "Gamers enter Vice City as Grand Theft Auto VI launches worldwide. "
-     "After thirteen years of waiting, the release arrives with enormous "
-     "hype and record expectations."),
-    ("MARKETS", "Nvidia promises raises; Fed signals more hikes",
-     "Nvidia's acting CEO Colette Kress promises earlier pay raises and "
-     "more stock grants; Nvidia halts H-series chip shipments to China. "
-     "Fed minutes show most officials expect further rate hikes."),
-    ("US POLITICS", "Jeffries set to be first Black House Speaker",
-     "Democrats nominate Hakeem Jeffries to be Speaker of the House. If "
-     "confirmed, he becomes the first African-American Speaker in US "
-     "history."),
-    ("SPACE", "Voyager 1 reaches one light-day from Earth",
-     "After almost 50 years in space, NASA's Voyager 1 probe is believed "
-     "to have reached a light-day from Earth \u2014 about 26 billion km "
-     "away. NASA confirms the milestone on Thursday."),
-]
-
-TICKER = ("ALSO TODAY:  Cyclone Akvan nears India's east coast  \u2022  "
-         "Australia sanctions Israeli settlers over West Bank expansion  "
-         "\u2022  Moldova summons Russia's envoy over drone incursions  "
-         "\u2022  Islam on track to be the world's largest religion by 2035, "
-         "Pew finds  \u2022  Canada recalibrates China ties, Carney says")
+def centred(draw, cx, y, text, fnt, fill):
+    w = draw.textlength(text, font=fnt)
+    draw.text((cx - w / 2, y), text, font=fnt, fill=fill)
 
 
-def build():
-    img = Image.new("RGB", (W, H), PAPER)
-    d = ImageDraw.Draw(img)
+def rule(draw, x0, x1, y, fill, width=1):
+    draw.line([(x0, y), (x1, y)], fill=fill, width=width)
 
-    # ---- masthead -------------------------------------------------------
-    d.rectangle([0, 0, W, 96], fill=NAVY)
-    d.rectangle([0, 96, W, 100], fill=GOLD)
-    mast = font(F_BOLD, 34)
-    d.text((28, 26), "THE WORLD IN ONE IMAGE", font=mast, fill=(255, 255, 255))
-    date_f = font(F_BOLD, 18)
-    date_txt = "THURSDAY  \u00b7  19 NOVEMBER 2026"
-    d.text((W - 28 - d.textlength(date_txt, font=date_f), 34),
-           date_txt, font=date_f, fill=(240, 196, 90))
 
-    # ---- lead story -----------------------------------------------------
-    lx, ly = 28, 116
-    kick = font(F_BOLD, 16)
-    d.text((lx, ly), "LEAD STORY  \u2014  GREAT-POWER SUMMIT", font=kick, fill=RED)
-    head = font(F_BOLD, 46)
-    d.text((lx, ly + 28), "TRUMP, XI AND PUTIN", font=head, fill=INK)
-    d.text((lx, ly + 80), "MEET IN SHENZHEN", font=head, fill=INK)
-    deck = font(F_REG, 16)
-    deck_lines = wrap(
-        d,
-        "The first-ever trilateral of sitting US, Russian and Chinese "
-        "presidents meets on the APEC sidelines. Ukraine, Iran, nuclear "
-        "stability and trade are on the table \u2014 but no deal is expected.",
-        deck, 640)
-    y = ly + 142
-    for line in deck_lines:
-        d.text((lx, y), line, font=deck, fill=(51, 58, 70))
-        y += 24
+def draw_flag_us(draw, x, y, w, h):
+    draw.rectangle([x, y, x + w, y + h], fill=(255, 255, 255), outline=INK)
+    stripe = h / 13.0
+    for i in range(0, 13, 2):
+        draw.rectangle([x, y + i * stripe, x + w, y + (i + 1) * stripe],
+                       fill=RED)
+    cw, ch = w * 0.4, h * 7 / 13.0
+    draw.rectangle([x, y, x + cw, y + ch], fill=NAVY)
 
-    # summit illustration, right of the lead text
-    draw_summit(d, 700, 118, 996, 330)
 
-    d.line([28, 344, 996, 344], fill=INK, width=2)
+def draw_flag_cn(draw, x, y, w, h):
+    draw.rectangle([x, y, x + w, y + h], fill=(222, 41, 16), outline=INK)
+    draw.ellipse([x + 6, y + 5, x + 14, y + 13], fill=(255, 222, 0))
+    for sx, sy in [(28, 6), (36, 12), (36, 22), (28, 28)]:
+        draw.ellipse([x + sx, y + sy, x + sx + 5, y + sy + 5],
+                     fill=(255, 222, 0))
 
-    # ---- story grid -----------------------------------------------------
-    gx, gy = 28, 358
-    col_w, row_h, gap = 476, 164, 16
-    kicker_f = font(F_BOLD, 13)
-    head_f = font(F_BOLD, 19)
-    body_f = font(F_REG, 13)
-    for i, (kicker, headline, body) in enumerate(STORIES):
-        col, row = i % 2, i // 2
-        x0 = gx + col * (col_w + gap)
-        y0 = gy + row * (row_h + gap)
-        d.rectangle([x0, y0, x0 + col_w, y0 + row_h], fill=CARD, outline=LINE, width=1)
-        # number badge
-        d.ellipse([x0 + 12, y0 + 12, x0 + 38, y0 + 38], fill=NAVY)
-        num_f = font(F_BOLD, 15)
-        n = str(i + 1)
-        d.text((x0 + 25 - d.textlength(n, font=num_f) / 2, y0 + 16),
-               n, font=num_f, fill=(255, 255, 255))
-        d.text((x0 + 48, y0 + 14), kicker, font=kicker_f, fill=RED)
-        hl = wrap(d, headline, head_f, col_w - 24)
-        hy = y0 + 42
-        for line in hl[:2]:
-            d.text((x0 + 12, hy), line, font=head_f, fill=INK)
-            hy += 24
-        bl = wrap(d, body, body_f, col_w - 24)
-        by = hy + 4
-        for line in bl[:4]:
-            d.text((x0 + 12, by), line, font=body_f, fill=(51, 58, 70))
-            by += 19
 
-    # ---- ticker ---------------------------------------------------------
-    ty = 884
-    d.rectangle([0, ty, W, ty + 68], fill=NAVY_DARK)
-    tick_f = font(F_REG, 15)
-    tick_lines = wrap(d, TICKER, tick_f, W - 56)
-    yy = ty + 10
-    for line in tick_lines:
-        d.text((28, yy), line, font=tick_f, fill=(255, 255, 255))
-        yy += 20
+def draw_flag_ru(draw, x, y, w, h):
+    draw.rectangle([x, y, x + w, y + h], fill=(255, 255, 255), outline=INK)
+    draw.rectangle([x, y + h / 3, x + w, y + 2 * h / 3], fill=(0, 57, 166))
+    draw.rectangle([x, y + 2 * h / 3, x + w, y + h], fill=(213, 0, 0))
 
-    # ---- footer ---------------------------------------------------------
-    foot_f = font(F_REG, 13)
-    foot = ("Sources: Reuters \u00b7 AP \u00b7 BBC \u00b7 Al Jazeera \u00b7 Financial Times \u2014 "
-            "summary of verified reports published 19 November 2026.")
-    d.text(((W - d.textlength(foot, font=foot_f)) / 2, 964), foot,
-           font=foot_f, fill=GREY)
-    foot2 = "Built for make.fun bounty news-image-20261119  \u00b7  One image, one day of world news."
-    d.text(((W - d.textlength(foot2, font=foot_f)) / 2, 986), foot2,
-           font=foot_f, fill=GREY)
 
-    return img
+def draw_skyline(draw, x0, x1, base, heights, fill):
+    n = len(heights)
+    span = x1 - x0
+    bw = span / n
+    for i, hh in enumerate(heights):
+        bx = x0 + i * bw
+        draw.rectangle([bx + 1, base - hh, bx + bw - 1, base], fill=fill)
+        # tiny lit windows
+        for wy in range(int(base - hh + 6), int(base - 4), 12):
+            draw.rectangle([bx + 4, wy, bx + 7, wy + 5], fill=GOLD)
 
 
 def main():
-    img = build()
-    out = "/output/entry.png"
-    try:
-        os.makedirs("/output", exist_ok=True)
-    except OSError:
-        out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           "output", "entry.png")
-        os.makedirs(os.path.dirname(out), exist_ok=True)
-    img.save(out, format="PNG", optimize=True)
-    size = os.path.getsize(out)
-    assert img.size == (1024, 1024), img.size
-    assert size <= 1024 * 1024, size
-    with open(out, "rb") as fh:
-        digest = hashlib.sha256(fh.read()).hexdigest()
-    print(f"wrote {out} ({img.size[0]}x{img.size[1]}, {size} bytes, sha256 {digest})")
+    img = Image.new("RGB", (W, H), PAPER)
+    d = ImageDraw.Draw(img)
+    M = 36
+    CW = W - 2 * M
+
+    # ---- masthead ----
+    d.rectangle([0, 0, W, 108], fill=NAVY)
+    centred(d, W / 2, 16, "THE WORLD IN ONE IMAGE", serif_b(50), (255, 255, 255))
+    centred(d, W / 2, 72, "THURSDAY  ·  19 NOVEMBER 2026", sans_b(20), GOLD)
+    d.rectangle([0, 108, W, 113], fill=RED)
+
+    y = 132
+    # ---- lead story ----
+    d.text((M, y), "LEAD STORY  —  SHENZHEN, CHINA", font=sans_b(19), fill=RED)
+    y += 28
+    y = para(d, M, y, "Trump, Xi and Putin meet in Shenzhen",
+             serif_b(42), INK, CW, 50)
+    y += 4
+    y = para(d, M, y,
+             "The first trilateral of the three sitting presidents — Ukraine, "
+             "Iran, nuclear stability and trade on the table on the APEC sidelines.",
+             sans(21), SOFT, CW, 28)
+    y += 8
+
+    # ---- illustration: sky, sun, skyline, three flags ----
+    band_y = y
+    band_h = 100
+    d.rectangle([M, band_y, W - M, band_y + band_h], fill=SKY)
+    d.ellipse([W - M - 104, band_y + 14, W - M - 36, band_y + 82], fill=SUN)
+    draw_skyline(d, M + 260, W - M - 116, band_y + band_h,
+                 [42, 60, 52, 78, 48, 68, 56, 82, 46, 66], NAVY_DARK)
+    flags = [(draw_flag_us, 52), (draw_flag_cn, 124), (draw_flag_ru, 196)]
+    for fn, fx in flags:
+        d.line([(fx + 29, band_y + 12), (fx + 29, band_y + band_h)],
+               fill=INK, width=2)
+        fn(d, fx, band_y + 12, 58, 34)
+    d.rectangle([M, band_y + band_h, W - M, band_y + band_h + 3], fill=GOLD)
+    y = band_y + band_h + 8
+    centred(d, W / 2, y, "SHENZHEN  —  THE THREE PRESIDENTS, TOGETHER FOR THE FIRST TIME",
+            sans_b(13), GREY)
+    y += 22
+
+    # ---- lead body ----
+    y = para(d, M, y,
+             "The three leaders met as a trio for the first time in history, on "
+             "the sidelines of the APEC summit. Shenzhen hosted the talks — and "
+             "the world watched for signals on war, trade and the nuclear balance.",
+             sans(18), INK, CW, 26)
+    y += 8
+    rule(d, M, W - M, y, INK, 2)
+    rule(d, M, W - M, y + 5, INK, 1)
+    y += 14
+
+    # ---- section header ----
+    d.text((M, y), "MORE FROM THE DAY", font=sans_b(20), fill=NAVY)
+    rule(d, M + 250, W - M, y + 11, LINE, 2)
+    y += 30
+
+    # ---- six stories, two columns x three rows ----
+    stories = [
+        ("MIDDLE EAST", RED,
+         "US and Iran trade fire again",
+         "Tehran widens its attacks to Kuwait and Bahrain as the exchange escalates."),
+        ("EUROPE", NAVY,
+         "EU proposes a €45bn loan for Ukraine",
+         "Repaid only once Russia pays reparations, under the bloc's new plan."),
+        ("GAMES", GOLD,
+         "GTA VI begins its global rollout",
+         "After a 13-year wait, the most anticipated game in history launches."),
+        ("MARKETS", NAVY,
+         "Nvidia pledges earlier pay rises",
+         "The acting CEO's promise lands as the Fed signals more rate hikes."),
+        ("WASHINGTON", RED,
+         "Democrats nominate Hakeem Jeffries",
+         "In line to become the first Black Speaker of the House."),
+        ("SPACE", GOLD,
+         "Voyager 1 reaches one light-day",
+         "Humanity's farthest traveller passes a new milestone from Earth."),
+    ]
+    col_w = (CW - 24) // 2
+    row_h = 96
+    for i, (kick, col, head, summ) in enumerate(stories):
+        cx = M + (i % 2) * (col_w + 24)
+        cy = y + (i // 2) * (row_h + 8)
+        d.text((cx, cy), kick, font=sans_b(14), fill=col)
+        cy = para(d, cx, cy + 19, head, sans_b(19), INK, col_w, 21)
+        para(d, cx, cy + 3, summ, sans(15), GREY, col_w, 17)
+    y = y + 3 * row_h + 2 * 8 + 6
+
+    # ---- ticker ----
+    rule(d, M, W - M, y, GOLD, 2)
+    y += 8
+    d.text((M, y), "ALSO TODAY", font=sans_b(18), fill=RED)
+    y += 24
+    y = para(d, M, y,
+             "Cyclone Akvan nears India's east coast  •  Australia sanctions "
+             "Israeli settlers  •  Moldova summons Russia's envoy over drone "
+             "incursions  •  Islam is on track to be the world's largest "
+             "religion by 2035 (Pew)  •  Canada recalibrates its China ties",
+             sans(16), INK, CW, 22)
+    y += 12
+
+    # ---- footer ----
+    rule(d, M, W - M, y, LINE, 1)
+    y += 8
+    centred(d, W / 2, y, "Sources: Reuters  •  AP  •  BBC  •  Al Jazeera  •  Financial Times",
+            sans(15), GREY)
+    y += 20
+    centred(d, W / 2, y, "19 November 2026  —  built for the make.fun bounty news-image-20261119",
+            sans(14), GREY)
+    y += 18
+    assert y <= H - 4, "layout overflow: y=%d" % y
+
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    img.save(OUT, "PNG")
+    data = open(OUT, "rb").read()
+    print("wrote", OUT)
+    print("size", img.size, "bytes", len(data))
+    print("sha256", hashlib.sha256(data).hexdigest())
 
 
 if __name__ == "__main__":

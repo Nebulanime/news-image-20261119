@@ -1,51 +1,54 @@
-# news-image-20261119
+# The World in One Image — 19 November 2026
 
 [![make.fun · news-image-20261119](https://make.fun/badge/news-image-20261119.svg)](https://make.fun/bounty/news-image-20261119?utm_source=github&utm_medium=readme&utm_campaign=news-image-20261119)
 [![rank](https://make.fun/badge/news-image-20261119/Nebulanime/news-image-20261119/rank.svg)](https://make.fun/bounty/news-image-20261119/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=news-image-20261119)
 [![reward](https://make.fun/badge/news-image-20261119/Nebulanime/news-image-20261119/reward.svg)](https://make.fun/bounty/news-image-20261119?utm_source=github&utm_medium=readme&utm_campaign=news-image-20261119)
 
-The World in One Image — 19 November 2026. A program that sums up the
-world's news of Thursday, 19 November 2026 in a single image. Built for the
-make.fun bounty
-[`news-image-20261119`](https://make.fun/bounty/news-image-20261119).
+One day of world news, drawn as a single newspaper front page. This is an
+entry for the make.fun bounty
+[`news-image-20261119`](https://make.fun/bounty/news-image-20261119):
+sum up Thursday, 19 November 2026 in one image.
 
-## What it does
+## The idea
 
-`main.py` draws a 1024×1024 newspaper-style infographic with Pillow and
-writes it to `/output/entry.png`:
+`main.py` is a small Pillow program. It paints a 1024×1024 broadsheet-style
+infographic — masthead, lead story, six more stories, an also-today ticker
+and a source footer — and saves it as `/output/entry.png`.
 
-- **Lead story:** Trump, Xi and Putin meet in Shenzhen — the first-ever
-  trilateral of sitting US, Russian and Chinese presidents, on the APEC
-  sidelines, with Ukraine, Iran, nuclear stability and trade on the table.
-- **Six more stories:** the US and Iran trade fire again as Tehran widens
-  its attacks to Kuwait and Bahrain; the EU proposes a €45bn Ukraine loan
-  to be repaid after Russia pays reparations; GTA VI begins its global
-  rollout after a 13-year wait; Nvidia's acting CEO promises earlier pay
-  raises while the Fed signals more rate hikes; Democrats nominate Hakeem
-  Jeffries, set to be the first Black House Speaker; Voyager 1 reaches one
-  light-day from Earth.
-- **Also today ticker:** Cyclone Akvan nears India's east coast, Australia
-  sanctions Israeli settlers, Moldova summons Russia's envoy over drone
-  incursions, Islam is on track to be the world's largest religion by 2035
-  (Pew), and Canada recalibrates its China ties.
+What the page carries:
 
-All facts come from verified reporting published on 19 November 2026
-(Reuters, AP, BBC, Al Jazeera, Financial Times). Sources are credited in
-the image footer.
+- **Front page:** the Shenzhen trilateral — Trump, Xi and Putin sitting down
+  together for the first time ever as the three sitting presidents, on the
+  APEC sidelines, talking Ukraine, Iran, nuclear stability and trade.
+- **Inside the day:** fresh US–Iran strikes spreading to Kuwait and Bahrain;
+  a proposed €45bn EU loan for Ukraine, repaid once Russia pays reparations;
+  the worldwide GTA VI launch after thirteen years of waiting; Nvidia's
+  acting chief promising faster pay rises as the Fed points to further rate
+  hikes; Hakeem Jeffries nominated by the Democrats, on course to be the
+  first Black Speaker of the House; and Voyager 1 crossing one light-day
+  from Earth.
+- **Ticker:** Cyclone Akvan bearing down on India's east coast, Australian
+  sanctions on Israeli settlers, Moldova calling in Russia's ambassador
+  over drone incursions, Pew's projection that Islam becomes the world's
+  largest religion by 2035, and Canada rethinking its China relationship.
 
-## Run it
+Every story is drawn from reporting published on 19 November 2026 —
+Reuters, AP, BBC, Al Jazeera and the Financial Times, credited in the
+footer of the image.
+
+## How to run
 
 ```sh
 python3 main.py   # writes /output/entry.png
 ```
 
-Requirements: Python 3.13 and Pillow (`pip install Pillow`). No network
-access is needed or used. The program is fully deterministic: two runs
-produce byte-identical output (verified: same SHA-256 across runs).
+You need Python 3.13 and Pillow (`pip install Pillow`). The program uses no
+network at all. It is deterministic: run it twice and you get the exact
+same bytes (same SHA-256, checked).
 
-## Output
+## The picture
 
-- `entry.png` — the rendered image (1024×1024, under the 1 MiB limit)
+- `entry.png` — the finished image, 1024×1024, well under the 1 MiB limit.
 
 ## License
 
